@@ -1,2 +1,18 @@
 Hello 
 this is a new file in the git staging area.
+git --version
+git config --global user.name "Your Name"
+git config --global user.email "your@email.com"
+git config --list
+
+pwd          # Current directory
+ls           # List files
+ls -a        # Hidden files
+clear        # Clear terminal
+cd folder    # Change directory
+
+git clone URL
+git status
+git add .    # Stage all changes
+git commit -m "message"
+git push origin main
