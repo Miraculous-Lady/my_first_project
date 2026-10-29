@@ -1,4 +1,4 @@
-GitHub version control 
+GitHub version control -------------------------------------------------------------------------------------------------------
 A. Clone an existing GitHub repository
 1. Create GitHub account → Create repository with README.
 
@@ -70,3 +70,172 @@ git branch
 git branch -M main
 git push -u origin main
 
+
+Jenkins Build Pipeline --------------------------------------------------------------------------------------------
+Aim: To set up a build pipeline using Jenkins.
+1. Install and start Jenkins
+- Download jenkins.war from Jenkins.io.
+- Open CMD/Terminal and go to Downloads:
+cd Downloads
+java -jar jenkins.war
+
+
+- Change port if required:
+java -jar jenkins.war --httpPort=9191
+
+
+- Open browser: http://localhost:8080
+2. Create 4 Jenkins jobs
+Dashboard → New Item → Enter job name → Select Freestyle project → OK.
+
+Under Build Steps → Execute shell, enter:
+echo "Build process successfully done"
+
+
+Click Apply → Save.
+
+Repeat for 4 jobs: Build, Test, Deploy, Release.
+3. Link jobs in sequence
+For each next job:
+
+Configure → Build Triggers → Build after other projects are built
+
+Enter the previous job's name → Apply → Save.
+
+Link sequence:
+
+Build → Test → Deploy → Release
+
+Run the first job; the next jobs run automatically when configured correctly.
+4. Install Build Pipeline plugin
+Manage Jenkins → Plugins → Available plugins → Search Build Pipeline → Install.
+5. Create pipeline view
+Dashboard → + (Add View) → Enter view name → Select Build Pipeline View → OK.
+- Pipeline Flow: Select initial job (Build).
+- Display Options: Set number of displayed builds.
+- Click Apply → Save.
+Remember
+Install → Start → Create 4 Jobs → Link Jobs → Install Plugin → Create Pipeline View
+
+Result: Jenkins build pipeline is configured to execute jobs sequentially.
+
+Docker --------------------------------------------------------------------------------------------------------------------------------
+Aim: To containerize and run an application using Docker.
+1. Install Docker
+- Download and install Docker Desktop.
+- Enable WSL 2 if required and open Docker Desktop.
+- Verify installation in PowerShell:
+docker --version
+
+
+2. Create application
+Create folder myapp → Create app.py inside it:
+print("Hello from Docker!")
+
+
+
+3. Create Dockerfile
+Inside myapp, create a file named Dockerfile (no extension):
+FROM python:3.10-slim
+WORKDIR /app
+COPY . /app
+CMD ["python", "app.py"]
+
+
+4. Build Docker image
+Open terminal inside the myapp folder:
+docker build -t myapp-image .
+
+
+5. Run container
+docker run --name myapp-container myapp-image
+
+
+Output: Hello from Docker!
+6. Verify containers
+docker ps -a
+
+
+7. Stop and remove (optional)
+docker stop myapp-container
+docker rm myapp-container
+
+
+Note: This app finishes immediately, so the container exits automatically. docker ps -a will still show it.
+Remember the sequence
+Install → Create app → Dockerfile → Build → Run → Verify
+- docker build = Create image
+- docker run = Run container
+- docker ps -a = Show all containers
+
+Docker Compose —------------------------------------------------------------------------------------------------------------------
+Aim: To create and run Docker containers using Docker Compose.
+1. Dockerfile vs Docker Compose
+- Dockerfile = Instructions to build an image.
+- Docker Compose = YAML file to configure and run services/containers.
+- Nginx = Web server used to serve web pages.
+2. Create compose.yml
+For a simple Nginx web server, create compose.yml:
+services:
+  web:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+
+
+3. Run the container
+docker compose up -d
+
+
+4. Check running services
+docker compose ps
+
+
+5. Open browser
+http://localhost:8080
+
+The Nginx welcome page should appear.
+6. Stop and remove containers
+docker compose down
+
+
+
+Multi-service application (Web + Backend + Database)
+Create compose.yml:
+services:
+  web:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    depends_on:
+      - app
+
+  app:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./app:/app
+    command: node server.js
+    depends_on:
+      - db
+
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: mydatabase
+
+
+Run and check:
+docker compose up -d
+docker compose ps
+docker compose down
+
+
+Note: This multi-service example requires the backend files (including app/server.js) to exist. The Nginx example is the simplest one to demonstrate in a practical exam.
+Remember
+Create YAML → up → ps → Test in browser → down
+- up -d = Start services in the background.
+- ps = Check services.
+- down = Stop and remove services.
