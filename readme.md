@@ -239,3 +239,305 @@ Create YAML → up → ps → Test in browser → down
 - up -d = Start services in the background.
 - ps = Check services.
 - down = Stop and remove services.
+
+
+GitHub Actions —----------------------------------------------------------------------------------------------------------------------
+Aim: To automate application deployment using GitHub Actions.
+1. Create and clone repository
+Create GitHub repository automated-deployment, then copy its HTTPS URL.
+git clone REPOSITORY_URL
+cd automated-deployment
+
+
+2. Create application
+Create index.html and add HTML content:
+<h1>Hello from GitHub Actions!</h1>
+<p>This application is deployed automatically.</p>
+
+
+Push the file:
+git add .
+git commit -m "Add application"
+git push origin main
+
+
+3. Create workflow file
+Inside the project, create:
+
+.github/workflows/deploy.yml
+
+Add this code:
+name: Deploy Application
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+      - uses: actions/deploy-pages@v4
+
+
+4. Push workflow to GitHub
+git add .github/workflows/deploy.yml
+git commit -m "Add deployment workflow"
+git push origin main
+
+
+5. Enable GitHub Pages
+GitHub repository → Settings → Pages → Build and deployment → Source → GitHub Actions.
+6. Check deployment
+Repository → Actions → Open workflow → Wait for green check mark.
+
+Visit:
+
+https://USERNAME.github.io/REPOSITORY-NAME/
+
+Replace the placeholders with your GitHub username and repository name.
+Remember the flow
+Create repo → Add HTML → Create workflow → Push → Enable Pages → Check Actions → Open website
+
+Result: Application deployment is automated using GitHub Actions whenever changes are pushed to the main branch.
+
+
+Kubernetes —-------------------------------------------------------------------------------------------------------------------------
+
+Aim: To deploy and manage containers using Kubernetes.
+
+### 1. Check installation
+
+```
+docker --version
+kubectl version --client
+kubectl get nodes
+```
+
+Node status should be `Ready`. Enable Kubernetes in Docker Desktop first.
+
+### 2. Create application
+
+Create `app.py`:
+
+```
+from flask import Flaskapp = Flask(__name__)@app.route("/")def home():    return "Hello from Kubernetes!"app.run(host="0.0.0.0", port=5000)
+```
+
+Create `requirements.txt`:
+
+```
+flask
+```
+
+### 3. Create Dockerfile
+
+```
+FROM python:3.11-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY app.py .
+EXPOSE 5000
+CMD ["python", "app.py"]
+```
+
+### 4. Build and upload image
+
+Replace `YOUR_USERNAME` with your Docker Hub username.
+
+```
+docker build -t my-flask-app:1.0 .
+docker login
+docker tag my-flask-app:1.0 YOUR_USERNAME/my-flask-app:1.0
+docker push YOUR_USERNAME/my-flask-app:1.0
+```
+
+### 5. Create Deployment
+
+Create `deployment.yaml`:
+
+```
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flask-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: flask-app
+  template:
+    metadata:
+      labels:
+        app: flask-app
+    spec:
+      containers:
+        - name: flask-container
+          image: YOUR_USERNAME/my-flask-app:1.0
+          ports:
+            - containerPort: 5000
+```
+
+Apply and check:
+
+```
+kubectl apply -f deployment.yaml
+kubectl get deployments
+kubectl get pods
+```
+
+### 6. Expose application using Service
+
+Create `service.yaml`:
+
+```
+apiVersion: v1
+kind: Service
+metadata:
+  name: flask-service
+spec:
+  selector:
+    app: flask-app
+  ports:
+    - port: 80
+      targetPort: 5000
+  type: NodePort
+```
+
+```
+kubectl apply -f service.yaml
+kubectl get services
+kubectl port-forward service/flask-service 8080:80
+```
+
+Open `http://localhost:8080` in your browser.
+
+### 7. Scale Pods
+
+```
+kubectl scale deployment flask-deployment --replicas=5
+kubectl get pods
+```
+
+Reduce to two:
+
+```
+kubectl scale deployment flask-deployment --replicas=2
+```
+
+### 8. Update and rollback
+
+```
+docker build -t YOUR_USERNAME/my-flask-app:2.0 .
+docker push YOUR_USERNAME/my-flask-app:2.0
+kubectl set image deployment/flask-deployment flask-container=YOUR_USERNAME/my-flask-app:2.0
+kubectl rollout status deployment/flask-deployment
+```
+
+Rollback if the update fails:
+
+```
+kubectl rollout undo deployment/flask-deployment
+```
+
+### 9. Monitor and troubleshoot
+
+```
+kubectl get pods
+kubectl get all
+kubectl describe pod POD_NAME
+kubectl logs POD_NAME
+kubectl get pods -w
+kubectl rollout restart deployment/flask-deployment
+```
+
+Replace `POD_NAME` with the actual Pod name.
+
+### 10. Delete resources
+
+```
+kubectl delete -f service.yaml
+kubectl delete -f deployment.yaml
+```
+
+## Quick revision
+
+| Term / Command         | Meaning                             |
+| ---------------------- | ----------------------------------- |
+| Docker image           | Application package                 |
+| Pod                    | Smallest deployable Kubernetes unit |
+| Deployment             | Manages Pods and replicas           |
+| Service                | Provides stable network access      |
+| `kubectl apply -f`     | Create/update resources             |
+| `kubectl get pods`     | View Pods                           |
+| `kubectl scale`        | Change replica count                |
+| `kubectl logs`         | View application logs               |
+| `kubectl rollout undo` | Roll back an update                 |
+
+Remember the workflow:
+
+Dockerfile → Build Image → Docker Hub → Deployment → Pods → Service → Application
+
+Result: The application is deployed and managed using Kubernetes, including scaling, updating, monitoring, and rollback.
+
+Apache Airflow —------------------------------------------------------------------------------------------------------------------------
+Aim: Design, schedule, execute and monitor a workflow using Apache Airflow with Docker.
+
+1. Create folders (inside airflow-project)
+mkdir dags
+mkdir logs
+mkdir plugins
+mkdir config
+
+
+Download the official docker-compose.yaml from Apache Airflow documentation.
+
+2. Start Airflow
+docker compose up airflow-init
+docker compose up -d
+docker compose ps
+
+
+Open http://localhost:8080 and log in using the configured credentials.
+
+3. Create DAG — dags/simple_workflow.py
+from datetime import datetimefrom airflow import DAGfrom airflow.operators.python import PythonOperatordef task1():    print("Hello! Airflow is running.")def task2():    print("Processing data...")def task3():    print("Workflow completed!")with DAG(    dag_id="simple_workflow",    start_date=datetime(2026, 9, 22),    schedule="@daily",    catchup=False) as dag:    a = PythonOperator(task_id="print_message", python_callable=task1)    b = PythonOperator(task_id="process_data", python_callable=task2)    c = PythonOperator(task_id="finish_workflow", python_callable=task3)    a >> b >> c
+
+
+
+4. Execute and monitor
+- Refresh Airflow UI and find simple_workflow.
+- Turn the DAG ON and click Trigger DAG.
+- Open Graph/Grid View to check task status.
+- Click a task → Logs to view output.
+5. Useful commands
+docker compose ps
+docker compose logs
+docker compose logs airflow-scheduler
+docker compose down
+docker compose up -d
+
+
+Quick revision
+- DAG: Defines workflow and task dependencies.
+- Task: Individual unit of work.
+- a >> b >> c: Executes tasks in sequence.
+- @daily: Schedules a daily run.
+- catchup=False: Prevents automatic runs for past scheduled dates.
+- Logs: Show task output and errors.
+- Docker Compose: Runs and manages Airflow containers.
+Workflow: Docker → Airflow → DAG → Tasks → Scheduling → Execution → Monitoring.
+
+Result: A scheduled workflow was created, executed and monitored using Apache Airflow and Docker.
